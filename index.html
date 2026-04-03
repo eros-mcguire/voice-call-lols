@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoiceBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --surface2: #1a1a24;
+      --border: #2a2a3a;
+      --accent: #7c6bff;
+      --accent2: #ff6b9d;
+      --green: #4ade80;
+      --red: #f87171;
+      --text: #e8e8f0;
+      --muted: #6b6b8a;
+      --glow: rgba(124, 107, 255, 0.3);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      overflow-x: hidden;
+    }
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,107,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,107,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: -40%;
+      left: -20%;
+      width: 80%;
+      height: 80%;
+      background: radial-gradient(ellipse, rgba(124,107,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      animation: drift 20s ease-in-out infinite alternate;
+    }
+
+    @keyframes drift {
+      from { transform: translate(0, 0); }
+      to { transform: translate(10%, 15%); }
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* HEADER */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10,10,15,0.8);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+
+    .logo-mark {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text span { color: var(--accent); }
+
+    .header-badge {
+      margin-left: auto;
+      font-size: 10px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+    }
+
+    /* SCREENS */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      width: 100%;
+      max-width: 480px;
+      animation: fadeUp 0.4s ease;
+    }
+    .screen.active { display: flex; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .hero-eyebrow {
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(42px, 8vw, 72px);
+      font-weight: 800;
+      line-height: 0.95;
+      letter-spacing: -3px;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 .line2 {
+      display: block;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      max-width: 340px;
+      margin: 0 auto;
+    }
+
+    /* CARD */
+    .card {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-header::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    .card-body { padding: 20px; }
+
+    /* BUTTONS */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #5b4dff);
+      color: white;
+      box-shadow: 0 4px 20px rgba(124,107,255,0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(124,107,255,0.45);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(124,107,255,0.05);
+    }
+
+    .btn-danger {
+      background: rgba(248,113,113,0.15);
+      color: var(--red);
+      border: 1px solid rgba(248,113,113,0.3);
+    }
+    .btn-danger:hover {
+      background: rgba(248,113,113,0.25);
+    }
+
+    .btn-green {
+      background: rgba(74,222,128,0.15);
+      color: var(--green);
+      border: 1px solid rgba(74,222,128,0.3);
+    }
+    .btn-green:hover { background: rgba(74,222,128,0.25); }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* DIVIDER */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* INPUT */
+    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-label { font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+
+    .input-row { display: flex; gap: 8px; }
+
+    input[type="text"] {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 14px;
+      letter-spacing: 2px;
+      outline: none;
+      transition: border-color 0.2s;
+      text-transform: uppercase;
+    }
+    input[type="text"]:focus { border-color: var(--accent); }
+    input[type="text"]::placeholder { color: var(--muted); letter-spacing: 1px; }
+
+    /* ROOM CODE DISPLAY */
+    .room-code-display {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .room-code-display .label {
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .room-code {
+      font-family: 'Syne', sans-serif;
+      font-size: 40px;
+      font-weight: 800;
+      letter-spacing: 8px;
+      color: var(--accent);
+      text-shadow: 0 0 20px var(--glow);
+    }
+
+    .room-code-hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    /* CALL SCREEN */
+    .call-container {
+      width: 100%;
+      max-width: 540px;
+    }
+
+    .peers-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .peer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 16px;
+      text-align: center;
+      transition: border-color 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .peer-card.speaking {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px rgba(124,107,255,0.15);
+    }
+
+    .peer-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(124,107,255,0.03), transparent);
+      pointer-events: none;
+    }
+
+    .peer-avatar {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      position: relative;
+    }
+
+    .peer-avatar.you { background: linear-gradient(135deg, var(--accent), #5b4dff); }
+    .peer-avatar.them { background: linear-gradient(135deg, var(--accent2), #e040b0); }
+
+    .peer-avatar .ring {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    .peer-card.speaking .peer-avatar .ring {
+      border-color: var(--accent);
+      animation: pulse-ring 1s ease infinite;
+    }
+
+    @keyframes pulse-ring {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.05); }
+    }
+
+    .peer-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .peer-status {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .peer-status.connected { color: var(--green); }
+    .peer-status.waiting { color: var(--accent); }
+
+    /* VU METER */
+    .vu-meter {
+      display: flex;
+      justify-content: center;
+      gap: 3px;
+      margin-top: 10px;
+      height: 20px;
+      align-items: flex-end;
+    }
+
+    .vu-bar {
+      width: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      transition: height 0.1s, background 0.1s;
+      min-height: 3px;
+    }
+
+    /* OUTPUT MIXER */
+    .mixer-card {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .mixer-card::before {
+      content: '◈ MIXED OUTPUT';
+      position: absolute;
+      top: -10px; left: 16px;
+      background: var(--bg);
+      padding: 0 8px;
+      font-size: 9px;
+      letter-spacing: 3px;
+      color: var(--accent);
+    }
+
+    .waveform-container {
+      height: 48px;
+      background: var(--surface2);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    canvas#waveform {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* CONTROLS */
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .ctrl-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .ctrl-btn:hover { border-color: var(--accent); }
+    .ctrl-btn.active { border-color: var(--accent); background: rgba(124,107,255,0.1); }
+    .ctrl-btn.danger { border-color: var(--red); }
+    .ctrl-btn.danger:hover { background: rgba(248,113,113,0.1); }
+
+    .ctrl-icon { font-size: 20px; }
+    .ctrl-label { font-size: 9px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+
+    /* STATUS BAR */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-dot.yellow { background: #fbbf24; box-shadow: 0 0 6px #fbbf24; animation: blink 1s step-end infinite; }
+    .status-dot.red { background: var(--red); }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    /* SETUP GUIDE MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 85vh;
+      overflow-y: auto;
+      animation: fadeUp 0.3s ease;
+    }
+
+    .modal-head {
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-head h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .modal-close:hover { color: var(--text); background: var(--surface2); }
+
+    .modal-body { padding: 20px; }
+
+    .os-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .os-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+    .os-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(124,107,255,0.08); }
+
+    .guide-content { display: none; }
+    .guide-content.active { display: block; }
+
+    .step {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .step-num {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--accent), #5b4dff);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-body h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .step-body p {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .step-body a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .code-chip {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--accent2);
+    }
+
+    .notice {
+      background: rgba(124,107,255,0.08);
+      border: 1px solid rgba(124,107,255,0.2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-top: 16px;
+    }
+    .notice strong { color: var(--text); }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 12px;
+      z-index: 300;
+      transition: transform 0.3s ease;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: var(--green); color: var(--green); }
+    .toast.error { border-color: var(--red); color: var(--red); }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .peers-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">🎙</div>
+  <div class="logo-text">Voice<span>Bridge</span></div>
+  <div class="header-badge">WEBRTC P2P</div>
+</header>
+
+<div id="app" style="padding-top: 80px;">
+
+  <!-- HOME SCREEN -->
+  <div class="screen active" id="screen-home">
+    <div class="hero">
+      <div class="hero-eyebrow">// peer-to-peer voice</div>
+      <h1>Bridge<span class="line2">Two Voices</span></h1>
+      <p>Crystal-clear P2P voice calls with mixed audio output. Route both voices into Discord, OBS, or any app as a single input device.</p>
+    </div>
+
+    <div class="card" style="width:100%">
+      <div class="card-header">Start a Session</div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+        <button class="btn btn-primary" onclick="createRoom()">
+          <span>⊕</span> Create New Room
+        </button>
+        <div class="divider">or join existing</div>
+        <div class="input-group">
+          <div class="input-label">Room Code</div>
+          <div class="input-row">
+            <input type="text" id="join-input" placeholder="XXXXXXXX" maxlength="8" />
+            <button class="btn btn-outline" style="width:auto;padding:12px 16px" onclick="joinRoom()">Join →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-outline" onclick="openGuide()" style="gap:8px">
+      📖 &nbsp;Discord Routing Setup Guide
+    </button>
+  </div>
+
+  <!-- WAITING SCREEN (host) -->
+  <div class="screen" id="screen-waiting">
+    <div class="hero" style="margin-top:0">
+      <div class="hero-eyebrow">// waiting for peer</div>
+      <h1 style="font-size:clamp(32px,6vw,52px)">Share the<span class="line2">Room Code</span></h1>
+    </div>
+
+    <div class="card" style="width:100%">
+      <div class="card-header">Room Code</div>
+      <div class="card-body">
+        <div class="room-code-display">
+          <div class="label">Share this code</div>
+          <div class="room-code" id="room-code-display">——————</div>
+          <div class="room-code-hint">Waiting for the other person to join...</div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-outline" onclick="copyRoomCode()" style="flex:1">📋 Copy Code</button>
+          <button class="btn btn-danger" onclick="leaveCall()" style="flex:1">✕ Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Animated waiting indicator -->
+    <div style="display:flex;gap:6px;align-items:center;color:var(--muted);font-size:12px">
+      <div id="wait-dots" style="display:flex;gap:4px">
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 1.2s 0s infinite"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 1.2s 0.4s infinite"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 1.2s 0.8s infinite"></div>
+      </div>
+      Listening for connection
+    </div>
+  </div>
+
+  <!-- CALL SCREEN -->
+  <div class="screen" id="screen-call">
+    <div class="call-container">
+
+      <div class="status-bar">
+        <div class="status-dot green" id="conn-dot"></div>
+        <span id="conn-status">Connected · P2P Encrypted</span>
+        <span style="margin-left:auto;color:var(--accent)" id="call-timer">00:00</span>
+      </div>
+
+      <div class="peers-grid">
+        <div class="peer-card" id="card-you">
+          <div class="peer-avatar you">
+            🎙
+            <div class="ring"></div>
+          </div>
+          <div class="peer-name">You</div>
+          <div class="peer-status connected" id="you-status">● LIVE</div>
+          <div class="vu-meter" id="vu-you">
+            <div class="vu-bar"></div><div class="vu-bar"></div><div class="vu-bar"></div>
+            <div class="vu-bar"></div><div class="vu-bar"></div><div class="vu-bar"></div>
+            <div class="vu-bar"></div>
+          </div>
+        </div>
+
+        <div class="peer-card" id="card-them">
+          <div class="peer-avatar them">
+            🗣
+            <div class="ring"></div>
+          </div>
+          <div class="peer-name">Peer</div>
+          <div class="peer-status connected" id="them-status">● LIVE</div>
+          <div class="vu-meter" id="vu-them">
+            <div class="vu-bar"></div><div class="vu-bar"></div><div class="vu-bar"></div>
+            <div class="vu-bar"></div><div class="vu-bar"></div><div class="vu-bar"></div>
+            <div class="vu-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mixer-card">
+        <div class="waveform-container">
+          <canvas id="waveform"></canvas>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="ctrl-btn" id="btn-mute" onclick="toggleMute()">
+          <div class="ctrl-icon">🎙</div>
+          <div class="ctrl-label">Mic On</div>
+        </div>
+        <div class="ctrl-btn" id="btn-deafen" onclick="toggleDeafen()">
+          <div class="ctrl-icon">🔊</div>
+          <div class="ctrl-label">Audio On</div>
+        </div>
+        <div class="ctrl-btn danger" onclick="leaveCall()">
+          <div class="ctrl-icon">📵</div>
+          <div class="ctrl-label">End Call</div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <button class="btn btn-outline" onclick="openGuide()" style="font-size:11px;padding:10px">
+          🎚 Discord Routing Guide
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- SETUP GUIDE MODAL -->
+<div class="modal-overlay" id="guide-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>🎚 Discord Routing Setup</h2>
+      <button class="modal-close" onclick="closeGuide()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="os-tabs">
+        <div class="os-tab active" onclick="setOS('windows')">🪟 Windows</div>
+        <div class="os-tab" onclick="setOS('mac')">🍎 macOS</div>
+        <div class="os-tab" onclick="setOS('linux')">🐧 Linux</div>
+      </div>
+
+      <!-- Windows Guide -->
+      <div class="guide-content active" id="guide-windows">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Install VB-Cable (free)</h3>
+            <p>Download and install the free <a href="https://vb-audio.com/Cable/" target="_blank">VB-Audio Virtual Cable</a>. This creates a virtual audio device on your system. Run the installer as Administrator and reboot if prompted.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Set Browser Output to VB-Cable</h3>
+            <p>In Chrome/Edge: Click the 🔊 icon in the browser tab → <span class="code-chip">Output: CABLE Input (VB-Audio)</span>. This routes the browser's audio (your mixed call) into the virtual cable.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Set Discord Input to VB-Cable Output</h3>
+            <p>In Discord: Settings → Voice &amp; Video → Input Device → <span class="code-chip">CABLE Output (VB-Audio)</span>. Discord will now receive the mixed audio of both call participants as a microphone.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Join a Discord Voice Channel</h3>
+            <p>Both voices from your VoiceBridge call will now appear as your microphone input in Discord, OBS, Zoom, or any other app.</p>
+          </div>
+        </div>
+        <div class="notice"><strong>Tip:</strong> Use Chrome's per-tab audio output control (click the speaker icon in the address bar on any tab) for granular control. VB-Cable Basic is free; VB-Cable A+B adds more virtual devices for $8.</div>
+      </div>
+
+      <!-- macOS Guide -->
+      <div class="guide-content" id="guide-mac">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Install BlackHole (free)</h3>
+            <p>Download <a href="https://existential.audio/blackhole/" target="_blank">BlackHole 2ch</a> — a free, open-source virtual audio driver for macOS. Install it and restart your browser.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Create a Multi-Output Device</h3>
+            <p>Open <span class="code-chip">Audio MIDI Setup</span> (Spotlight → "Audio MIDI Setup") → click <span class="code-chip">+</span> → <span class="code-chip">Create Multi-Output Device</span> → check both <span class="code-chip">BlackHole 2ch</span> and your speakers/headphones.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Set Browser Output</h3>
+            <p>In Chrome: click the speaker icon on this tab → select <span class="code-chip">Multi-Output Device</span> (or BlackHole 2ch directly). You'll still hear audio through your headphones while BlackHole captures it.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Set Discord Input to BlackHole</h3>
+            <p>Discord Settings → Voice &amp; Video → Input Device → <span class="code-chip">BlackHole 2ch</span>. Both voices are now your Discord mic input.</p>
+          </div>
+        </div>
+        <div class="notice"><strong>Tip:</strong> If you don't hear audio through headphones, make sure your Multi-Output Device includes your headphones AND BlackHole together.</div>
+      </div>
+
+      <!-- Linux Guide -->
+      <div class="guide-content" id="guide-linux">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Create a PulseAudio Null Sink</h3>
+            <p>Run in terminal: <span class="code-chip">pactl load-module module-null-sink sink_name=voicebridge sink_properties=device.description=VoiceBridge</span>. This creates a virtual audio device.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Route Browser Audio to Null Sink</h3>
+            <p>Open <span class="code-chip">pavucontrol</span> (PulseAudio Volume Control) → Playback tab → find your browser → change its output to <span class="code-chip">VoiceBridge</span>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Set Discord Input to Monitor</h3>
+            <p>In pavucontrol → Recording tab → set Discord's input to <span class="code-chip">Monitor of VoiceBridge</span>. Or in Discord Settings → Voice &amp; Video → Input: <span class="code-chip">Monitor of VoiceBridge</span>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Make it Permanent (optional)</h3>
+            <p>Add the pactl command to <span class="code-chip">~/.config/pulse/default.pa</span> to persist across reboots. PipeWire users: use <span class="code-chip">pw-loopback</span> instead.</p>
+          </div>
+        </div>
+        <div class="notice"><strong>PipeWire users:</strong> Run <span class="code-chip">pw-loopback --capture-props='media.class=Audio/Sink'</span> to create a loopback sink. Then follow steps 2–3 using <span class="code-chip">qpwgraph</span> or <span class="code-chip">pavucontrol</span>.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── State ──────────────────────────────────────────────────────────────────
+let ws, pc, localStream, remoteStream;
+let audioCtx, analyserLocal, analyserRemote, mergerNode, mixedDest;
+let animFrame, callTimerInterval, callSeconds = 0;
+let isMuted = false, isDeafened = false;
+let currentRoomId = null, myRole = null;
+let waveCanvas, waveCtx;
+
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' }
+];
+
+// ─── WebSocket ───────────────────────────────────────────────────────────────
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}`);
+
+  ws.onmessage = async (e) => {
+    const msg = JSON.parse(e.data);
+    switch (msg.type) {
+      case 'room-created':
+        currentRoomId = msg.roomId;
+        myRole = 'host';
+        document.getElementById('room-code-display').textContent = msg.roomId;
+        showScreen('waiting');
+        break;
+
+      case 'room-joined':
+        currentRoomId = msg.roomId;
+        myRole = 'guest';
+        await startCall();
+        break;
+
+      case 'peer-joined':
+        // host initiates
+        await startCall(true);
+        break;
+
+      case 'offer':
+        await pc.setRemoteDescription(new RTCSessionDescription(msg));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        wsSend({ type: 'answer', sdp: answer.sdp });
+        break;
+
+      case 'answer':
+        await pc.setRemoteDescription(new RTCSessionDescription(msg));
+        break;
+
+      case 'ice-candidate':
+        if (msg.candidate) {
+          try { await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)); } catch {}
+        }
+        break;
+
+      case 'peer-left':
+        showToast('Peer disconnected', 'error');
+        endCall();
+        break;
+
+      case 'error':
+        showToast(msg.message, 'error');
+        break;
+    }
+  };
+
+  ws.onclose = () => {};
+}
+
+function wsSend(data) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data));
+}
+
+// ─── Room Actions ─────────────────────────────────────────────────────────────
+function createRoom() {
+  connectWS();
+  ws.onopen = () => wsSend({ type: 'create-room' });
+}
+
+function joinRoom() {
+  const code = document.getElementById('join-input').value.trim().toUpperCase();
+  if (code.length !== 8) { showToast('Enter a valid 8-character code', 'error'); return; }
+  connectWS();
+  ws.onopen = () => wsSend({ type: 'join-room', roomId: code });
+}
+
+// ─── WebRTC Call ──────────────────────────────────────────────────────────────
+async function startCall(isInitiator = false) {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  } catch (err) {
+    showToast('Microphone access denied', 'error');
+    return;
+  }
+
+  setupAudioGraph();
+  showScreen('call');
+  startCallTimer();
+  startVUMeter();
+
+  pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+  pc.ontrack = (e) => {
+    remoteStream = e.streams[0];
+    connectRemoteToMixer(remoteStream);
+    document.getElementById('them-status').textContent = '● LIVE';
+    document.getElementById('them-status').className = 'peer-status connected';
+  };
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate) wsSend({ type: 'ice-candidate', candidate: e.candidate });
+  };
+
+  pc.onconnectionstatechange = () => {
+    const state = pc.connectionState;
+    const dot = document.getElementById('conn-dot');
+    const status = document.getElementById('conn-status');
+    if (state === 'connected') {
+      dot.className = 'status-dot green';
+      status.textContent = 'Connected · P2P Encrypted';
+    } else if (state === 'connecting') {
+      dot.className = 'status-dot yellow';
+      status.textContent = 'Connecting...';
+    } else if (state === 'disconnected' || state === 'failed') {
+      dot.className = 'status-dot red';
+      status.textContent = 'Connection lost';
+    }
+  };
+
+  if (isInitiator) {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    wsSend({ type: 'offer', sdp: offer.sdp });
+  }
+}
+
+// ─── Audio Graph ──────────────────────────────────────────────────────────────
+function setupAudioGraph() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  analyserLocal = audioCtx.createAnalyser();
+  analyserLocal.fftSize = 256;
+
+  analyserRemote = audioCtx.createAnalyser();
+  analyserRemote.fftSize = 256;
+
+  mergerNode = audioCtx.createChannelMerger(2);
+  mixedDest = audioCtx.createMediaStreamDestination();
+
+  // Local mic → analyser → merger → mixed output
+  const localSrc = audioCtx.createMediaStreamSource(localStream);
+  localSrc.connect(analyserLocal);
+  analyserLocal.connect(mergerNode, 0, 0);
+
+  mergerNode.connect(mixedDest);
+
+  waveCanvas = document.getElementById('waveform');
+  waveCtx = waveCanvas.getContext('2d');
+  drawWaveform();
+}
+
+function connectRemoteToMixer(stream) {
+  const remoteSrc = audioCtx.createMediaStreamSource(stream);
+  remoteSrc.connect(analyserRemote);
+  analyserRemote.connect(mergerNode, 0, 1);
+
+  // Also play remote audio in speaker
+  const remoteAudio = new Audio();
+  remoteAudio.srcObject = stream;
+  remoteAudio.play();
+}
+
+// ─── VU Meters ────────────────────────────────────────────────────────────────
+function startVUMeter() {
+  function updateVU(analyser, containerId, cardId) {
+    if (!analyser) return;
+    const buf = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(buf);
+    const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
+    const bars = document.querySelectorAll(`#${containerId} .vu-bar`);
+    bars.forEach((bar, i) => {
+      const threshold = (i / bars.length) * 50;
+      const active = avg > threshold;
+      bar.style.height = active ? `${8 + Math.random() * 12}px` : '3px';
+      bar.style.background = active ? 'var(--accent)' : 'var(--border)';
+    });
+    const card = document.getElementById(cardId);
+    if (avg > 8) card.classList.add('speaking');
+    else card.classList.remove('speaking');
+  }
+
+  function loop() {
+    updateVU(analyserLocal, 'vu-you', 'card-you');
+    updateVU(analyserRemote, 'vu-them', 'card-them');
+    animFrame = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+// ─── Waveform ─────────────────────────────────────────────────────────────────
+function drawWaveform() {
+  function frame() {
+    if (!waveCanvas || !audioCtx) return;
+    const W = waveCanvas.parentElement.clientWidth;
+    const H = 48;
+    waveCanvas.width = W;
+    waveCanvas.height = H;
+
+    waveCtx.clearRect(0, 0, W, H);
+
+    function drawChannel(analyser, color) {
+      if (!analyser) return;
+      const buf = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(buf);
+      waveCtx.strokeStyle = color;
+      waveCtx.lineWidth = 1.5;
+      waveCtx.beginPath();
+      const sliceW = W / buf.length;
+      let x = 0;
+      for (let i = 0; i < buf.length; i++) {
+        const v = buf[i] / 128.0;
+        const y = v * (H / 2);
+        if (i === 0) waveCtx.moveTo(x, y);
+        else waveCtx.lineTo(x, y);
+        x += sliceW;
+      }
+      waveCtx.stroke();
+    }
+
+    drawChannel(analyserLocal, 'rgba(124,107,255,0.8)');
+    drawChannel(analyserRemote, 'rgba(255,107,157,0.8)');
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ─── Controls ─────────────────────────────────────────────────────────────────
+function toggleMute() {
+  isMuted = !isMuted;
+  if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
+  const btn = document.getElementById('btn-mute');
+  btn.querySelector('.ctrl-icon').textContent = isMuted ? '🔇' : '🎙';
+  btn.querySelector('.ctrl-label').textContent = isMuted ? 'Muted' : 'Mic On';
+  btn.classList.toggle('active', isMuted);
+  document.getElementById('you-status').textContent = isMuted ? '○ MUTED' : '● LIVE';
+  document.getElementById('you-status').className = isMuted ? 'peer-status' : 'peer-status connected';
+}
+
+function toggleDeafen() {
+  isDeafened = !isDeafened;
+  const btn = document.getElementById('btn-deafen');
+  btn.querySelector('.ctrl-icon').textContent = isDeafened ? '🔕' : '🔊';
+  btn.querySelector('.ctrl-label').textContent = isDeafened ? 'Deafened' : 'Audio On';
+  btn.classList.toggle('active', isDeafened);
+  if (audioCtx) {
+    if (isDeafened) audioCtx.suspend();
+    else audioCtx.resume();
+  }
+}
+
+function leaveCall() {
+  wsSend({ type: 'leave' });
+  endCall();
+}
+
+function endCall() {
+  if (pc) { pc.close(); pc = null; }
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  if (animFrame) cancelAnimationFrame(animFrame);
+  clearInterval(callTimerInterval);
+  callSeconds = 0;
+  analyserLocal = null; analyserRemote = null;
+  isMuted = false; isDeafened = false;
+  if (ws) { ws.close(); ws = null; }
+  showScreen('home');
+}
+
+// ─── Timer ────────────────────────────────────────────────────────────────────
+function startCallTimer() {
+  callSeconds = 0;
+  callTimerInterval = setInterval(() => {
+    callSeconds++;
+    const m = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+    const s = String(callSeconds % 60).padStart(2, '0');
+    document.getElementById('call-timer').textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+// ─── UI Helpers ───────────────────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+}
+
+function copyRoomCode() {
+  if (currentRoomId) {
+    navigator.clipboard.writeText(currentRoomId).then(() => showToast('Code copied!', 'success'));
+  }
+}
+
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function openGuide() { document.getElementById('guide-modal').classList.add('open'); }
+function closeGuide() { document.getElementById('guide-modal').classList.remove('open'); }
+
+function setOS(os) {
+  document.querySelectorAll('.os-tab').forEach((t, i) => {
+    const oses = ['windows', 'mac', 'linux'];
+    t.classList.toggle('active', oses[i] === os);
+  });
+  document.querySelectorAll('.guide-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(`guide-${os}`).classList.add('active');
+}
+
+// Allow Enter key in join input
+document.getElementById('join-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') joinRoom();
+});
+
+// Close modal on overlay click
+document.getElementById('guide-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeGuide();
+});
+</script>
+</body>
+</html>
