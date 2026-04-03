@@ -8,7 +8,7 @@ const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname)));
 
 // rooms: { roomId: { hostWs, guestWs } }
 const rooms = new Map();
